@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Lucky Block Tsunami Survival 3D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Inter', sans-serif; user-select: none; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .pointer-events-auto { pointer-events: auto; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; background-color: white; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid rgba(0,0,0,0.5); pointer-events: none; z-index: 50;}
+        .hud-text { text-shadow: 1px 1px 2px black; }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Crosshair -->
+    <div id="crosshair"></div>
+
+    <!-- UI Layer -->
+    <div id="ui-layer" class="flex flex-col justify-between p-4 z-10">
+        
+        <!-- Top HUD -->
+        <div class="flex justify-between items-start">
+            <div class="bg-gray-900/70 p-4 rounded-xl shadow-lg border-2 border-gray-600 text-white min-w-[200px]">
+                <h2 class="text-2xl font-bold text-yellow-400 hud-text">💰 ウォレット: <span id="coinCount">0</span></h2>
+                <div class="mt-2 space-y-1 font-semibold text-gray-200">
+                    <p>🏦 基地バンク: <span id="bankCount" class="text-green-400">0</span></p>
+                    <p>💪 キックパワー: <span id="powerLevel" class="text-red-400">10</span></p>
+                    <p>🏃 スピードLv: <span id="speedLevel" class="text-blue-400">1</span></p>
+                    <p>👾 キャラ(Pets): <span id="petCount">0</span>/10</p>
+                </div>
+            </div>
+            
+            <!-- Controls Guide -->
+            <div class="bg-gray-900/70 p-4 rounded-xl shadow-lg border-2 border-gray-600 text-white text-right">
+                <h3 class="font-bold text-lg mb-2 border-b border-gray-500 pb-1">操作方法 (キーボード)</h3>
+                <p>移動: <span class="text-yellow-300 font-mono">W A S D</span></p>
+                <p>ジャンプ: <span class="text-yellow-300 font-mono">SPACE</span></p>
+                <p>筋トレ (On/Off): <span class="text-yellow-300 font-mono">Q</span></p>
+                <p>キックする: <span class="text-yellow-300 font-mono">E</span></p>
+                <p>スピード強化: <span class="text-yellow-300 font-mono">R</span> <span id="speedCostText" class="text-xs text-gray-400">(50金)</span></p>
+            </div>
+        </div>
+
+        <!-- Center Notifications -->
+        <div class="flex-1 flex items-center justify-center">
+            
+            <!-- Start Screen / Blocker -->
+            <div id="blocker" class="absolute inset-0 bg-black/60 flex items-center justify-center pointer-events-auto backdrop-blur-sm z-50">
+                <div id="loginModal" class="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-md w-full mx-4 border-4 border-blue-500">
+                    <h1 class="text-4xl font-extrabold text-blue-600 mb-2">TSUNAMI SURVIVAL</h1>
+                    <p class="text-gray-600 mb-6 font-bold">基地を育てて、津波から逃げ切れ！</p>
+                    
+                    <button id="googleLoginBtn" class="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-bold py-4 px-4 rounded-lg flex items-center justify-center gap-2 shadow-sm transition-all mb-4 text-lg">
+                        <svg class="w-6 h-6" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                        Googleでログインして遊ぶ
+                    </button>
+                    
+                    <div id="playInstructions" class="hidden">
+                        <button id="playBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-4 rounded-lg text-2xl shadow-lg transition-transform hover:scale-105 active:scale-95">
+                            ゲーム画面をクリックして開始
+                        </button>
+                        <p class="mt-4 text-sm text-gray-500">※カーソルを解除するにはESCキーを押してください</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="messageBanner" class="hidden text-5xl font-black text-white drop-shadow-[0_4px_4px_rgba(0,0,0,1)] animate-bounce text-center tracking-wider">
+                MESSAGE
+            </div>
+        </div>
+
+        <!-- Bottom Action Status -->
+        <div class="flex justify-center pb-8">
+            <div id="actionStatus" class="hidden bg-yellow-400 text-yellow-900 px-8 py-3 rounded-full font-black text-2xl shadow-[0_4px_0_#b45309] animate-pulse">
+                💪 筋トレ中... (移動不可)
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        
+        // Three.js
+        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
+        import { PointerLockControls } from 'https://unpkg.com/three@0.128.0/examples/jsm/controls/PointerLockControls.js';
+
+        // === Firebase Config ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyCpKaYMQNb0pEUcoBQIQvA5rofbpH3NkvY",
+            authDomain: "gigo-f334a.firebaseapp.com",
+            projectId: "gigo-f334a",
+            storageBucket: "gigo-f334a.firebasestorage.app",
+            messagingSenderId: "899759444818",
+            appId: "1:899759444818:web:9583a5db72c59f0e72608b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Required paths rules fallback
+        const appEnvId = typeof __app_id !== 'undefined' ? __app_id : 'gigo-f334a';
+        let userId = null;
+
+        // === Game State ===
+        let gameState = {
+            money: 0,
+            kickPower: 10,
+            speedLevel: 1,
+            petsCount: 0
+        };
+        let bankMoney = 0;
+        let isLifting = false;
+        let playState = 'idle'; // 'idle', 'kicked', 'escape'
+        let speedCost = 50;
+        let squatPhase = 0;
+
+        // === DOM Elements ===
+        const ui = {
+            money: document.getElementById('coinCount'),
+            bank: document.getElementById('bankCount'),
+            power: document.getElementById('powerLevel'),
+            speed: document.getElementById('speedLevel'),
+            pets: document.getElementById('petCount'),
+            cost: document.getElementById('speedCostText'),
+            blocker: document.getElementById('blocker'),
+            loginBtn: document.getElementById('googleLoginBtn'),
+            playBtn: document.getElementById('playBtn'),
+            instructions: document.getElementById('playInstructions'),
+            message: document.getElementById('messageBanner'),
+            status: document.getElementById('actionStatus')
+        };
+
+        // === Auth & DB Logic ===
+        ui.loginBtn.addEventListener('click', () => {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider).catch(console.error);
+        });
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                ui.loginBtn.style.display = 'none';
+                ui.instructions.classList.remove('hidden');
+                loadData();
+                initThreeJS();
+            }
+        });
+
+        // Try environment token if present
+        if (typeof __initial_auth_token !== 'undefined') {
+            signInWithCustomToken(auth, __initial_auth_token).catch(console.error);
+        }
+
+        const getUserDocRef = () => doc(db, 'artifacts', appEnvId, 'users', userId, 'gamedata', 'save');
+
+        async function loadData() {
+            if (!userId) return;
+            const docRef = getUserDocRef();
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                gameState = { ...gameState, ...docSnap.data() };
+            } else {
+                await setDoc(docRef, gameState);
+            }
+            updateSpeedCost();
+            updateUI();
+            rebuildBasePets();
+        }
+
+        async function saveData() {
+            if (!userId) return;
+            await setDoc(getUserDocRef(), gameState, { merge: true });
+        }
+
+        function updateSpeedCost() {
+            speedCost = Math.floor(50 * Math.pow(1.5, gameState.speedLevel - 1));
+        }
+
+        function updateUI() {
+            ui.money.innerText = Math.floor(gameState.money);
+            ui.bank.innerText = Math.floor(bankMoney);
+            ui.power.innerText = Math.floor(gameState.kickPower);
+            ui.speed.innerText = gameState.speedLevel;
+            ui.pets.innerText = gameState.petsCount;
+            ui.cost.innerText = `(${speedCost}金)`;
+        }
+
+        function showMessage(text, duration, colorClass = "text-white") {
+            ui.message.innerText = text;
+            ui.message.className = `text-5xl font-black drop-shadow-[0_4px_4px_rgba(0,0,0,1)] animate-bounce text-center tracking-wider ${colorClass}`;
+            ui.message.classList.remove('hidden');
+            setTimeout(() => ui.message.classList.add('hidden'), duration);
+        }
+
+        // === Three.js Setup ===
+        let scene, camera, renderer, controls;
+        let objects = [];
+        let raycaster;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, canJump = false;
+        let velocity = new THREE.Vector3();
+        let direction = new THREE.Vector3();
+        let prevTime = performance.now();
+
+        // Game Objects
+        let safeZonePlane, lanePlane, pressurePlate, luckyBlock, tsunami;
+        let basePetsGroup = new THREE.Group();
+        let followerPet = null;
+        let playerBody;
+
+        function initThreeJS() {
+            if (scene) return; // Prevent double init
+            
+            const canvas = document.getElementById('gameCanvas');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.FogExp2(0x87CEEB, 0.001); // Distant fog
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 5000);
+            camera.position.y = 5;
+
+            // Lighting
+            const light = new THREE.HemisphereLight(0xeeeeff, 0x777788, 0.75);
+            light.position.set(0.5, 1, 0.75);
+            scene.add(light);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(100, 200, 50);
+            dirLight.castShadow = true;
+            dirLight.shadow.camera.top = 200;
+            dirLight.shadow.camera.bottom = -200;
+            dirLight.shadow.camera.left = -200;
+            dirLight.shadow.camera.right = 200;
+            scene.add(dirLight);
+
+            // Controls
+            controls = new PointerLockControls(camera, document.body);
+            ui.playBtn.addEventListener('click', () => controls.lock());
+            controls.addEventListener('lock', () => ui.blocker.style.display = 'none');
+            controls.addEventListener('unlock', () => ui.blocker.style.display = 'flex');
+            scene.add(controls.getObject());
+
+            // Player Visual Body (attached to camera so it moves with it, but we offset it down)
+            const bodyGeo = new THREE.BoxGeometry(3, 6, 3);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xef4444 });
+            playerBody = new THREE.Mesh(bodyGeo, bodyMat);
+            playerBody.position.y = -3;
+            playerBody.castShadow = true;
+            camera.add(playerBody); // Attach to camera to move together
+
+            // Environment: Safe Zone (Base)
+            const szGeo = new THREE.PlaneGeometry(100, 100);
+            const szMat = new THREE.MeshStandardMaterial({ color: 0x86efac, roughness: 0.8 });
+            safeZonePlane = new THREE.Mesh(szGeo, szMat);
+            safeZonePlane.rotation.x = -Math.PI / 2;
+            safeZonePlane.position.set(0, 0, 0);
+            safeZonePlane.receiveShadow = true;
+            scene.add(safeZonePlane);
+
+            // Environment: Lane
+            const laneGeo = new THREE.PlaneGeometry(60, 4000);
+            const laneMat = new THREE.MeshStandardMaterial({ color: 0x6b7280, roughness: 0.6 });
+            lanePlane = new THREE.Mesh(laneGeo, laneMat);
+            lanePlane.rotation.x = -Math.PI / 2;
+            lanePlane.position.set(0, -0.1, -1950);
+            lanePlane.receiveShadow = true;
+            scene.add(lanePlane);
+
+            // Pressure Plate
+            const plateGeo = new THREE.BoxGeometry(10, 0.5, 10);
+            const plateMat = new THREE.MeshStandardMaterial({ color: 0xfacc15 });
+            pressurePlate = new THREE.Mesh(plateGeo, plateMat);
+            pressurePlate.position.set(0, 0.25, 20);
+            pressurePlate.receiveShadow = true;
+            scene.add(pressurePlate);
+
+            // Lucky Block (Hidden initially)
+            const blockGeo = new THREE.BoxGeometry(4, 4, 4);
+            const blockMat = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.3, metalness: 0.8 });
+            luckyBlock = new THREE.Mesh(blockGeo, blockMat);
+            luckyBlock.position.set(0, 2, 0);
+            luckyBlock.castShadow = true;
+            luckyBlock.visible = false;
+            scene.add(luckyBlock);
+
+            // Tsunami (Hidden initially)
+            const tsunamiGeo = new THREE.BoxGeometry(300, 100, 20);
+            const tsunamiMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.7 });
+            tsunami = new THREE.Mesh(tsunamiGeo, tsunamiMat);
+            tsunami.position.set(0, 50, 0);
+            tsunami.visible = false;
+            scene.add(tsunami);
+
+            // Pets Group in Base
+            scene.add(basePetsGroup);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+
+            setupInput();
+            window.addEventListener('resize', onWindowResize);
+
+            // Start Game Loops
+            setInterval(generatePassiveIncome, 1000);
+            animate();
+        }
+
+        function setupInput() {
+            const onKeyDown = (event) => {
+                if(!controls.isLocked) return;
+                switch (event.code) {
+                    case 'ArrowUp':
+                    case 'KeyW': moveForward = true; break;
+                    case 'ArrowLeft':
+                    case 'KeyA': moveLeft = true; break;
+                    case 'ArrowDown':
+                    case 'KeyS': moveBackward = true; break;
+                    case 'ArrowRight':
+                    case 'KeyD': moveRight = true; break;
+                    case 'Space': if (canJump && !isLifting) velocity.y += 100; canJump = false; break;
+                    case 'KeyQ': toggleWorkout(); break;
+                    case 'KeyE': triggerKick(); break;
+                    case 'KeyR': upgradeSpeed(); break;
+                }
+            };
+
+            const onKeyUp = (event) => {
+                switch (event.code) {
+                    case 'ArrowUp':
+                    case 'KeyW': moveForward = false; break;
+                    case 'ArrowLeft':
+                    case 'KeyA': moveLeft = false; break;
+                    case 'ArrowDown':
+                    case 'KeyS': moveBackward = false; break;
+                    case 'ArrowRight':
+                    case 'KeyD': moveRight = false; break;
+                }
+            };
+
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // === Game Actions ===
+
+        function toggleWorkout() {
+            if (playState !== 'idle') {
+                showMessage("今は筋トレできない！", 2000, "text-red-500");
+                return;
+            }
+            
+            // 基地内(Z > -50)でのみ筋トレ可能
+            if (controls.getObject().position.z < -50) {
+                showMessage("基地に戻ってから筋トレしよう", 2000, "text-yellow-400");
+                return;
+            }
+
+            isLifting = !isLifting;
+            if (isLifting) {
+                ui.status.classList.remove('hidden');
+                // Stop movement
+                moveForward = moveBackward = moveLeft = moveRight = false;
+                velocity.x = velocity.z = 0;
+            } else {
+                ui.status.classList.add('hidden');
+                playerBody.scale.y = 1; // Reset scale
+                camera.position.y = 5;
+            }
+        }
+
+        function upgradeSpeed() {
+            if (gameState.money >= speedCost) {
+                gameState.money -= speedCost;
+                gameState.speedLevel++;
+                updateSpeedCost();
+                saveData();
+                updateUI();
+                showMessage("スピードUP!!", 1500, "text-blue-400");
+            } else {
+                showMessage("お金が足りない！", 1500, "text-red-500");
+            }
+        }
+
+        function triggerKick() {
+            if (playState !== 'idle' || isLifting) return;
+            
+            if (controls.getObject().position.z < -40) {
+                showMessage("基地(緑のエリア)から蹴ってね", 2000, "text-yellow-400");
+                return;
+            }
+
+            playState = 'kicked';
+            
+            // Calculate distance based on kick power (e.g. power 10 -> z=-200, power 100 -> z=-2000)
+            const targetZ = -50 - (gameState.kickPower * 15); 
+            
+            luckyBlock.position.set(0, 50, 0); // Drop from sky
+            luckyBlock.visible = true;
+            
+            // Simple animation of block flying
+            let flightProgress = 0;
+            const flightInterval = setInterval(() => {
+                flightProgress += 0.05;
+                luckyBlock.position.z = THREE.MathUtils.lerp(0, targetZ, flightProgress);
+                luckyBlock.position.y = Math.max(2, 50 - (flightProgress * 100)); // Arc down
+                luckyBlock.rotation.x += 0.2;
+                luckyBlock.rotation.y += 0.2;
+                
+                if (flightProgress >= 1) {
+                    clearInterval(flightInterval);
+                    luckyBlock.position.y = 2;
+                    luckyBlock.position.z = targetZ;
+                    showMessage("走れ！ブロックを取りに行け！", 3000, "text-yellow-400");
+                }
+            }, 16);
+        }
+
+        function triggerTsunami(blockZ) {
+            playState = 'escape';
+            luckyBlock.visible = false;
+            
+            // Spawn follower pet
+            const petGeo = new THREE.BoxGeometry(2, 2, 2);
+            const petMat = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
+            followerPet = new THREE.Mesh(petGeo, petMat);
+            scene.add(followerPet);
+
+            // Tsunami appears behind block
+            tsunami.position.set(0, 50, blockZ - 100);
+            tsunami.visible = true;
+            
+            showMessage("津波だ！急いで基地へ戻れ！！", 4000, "text-red-600");
+        }
+
+        function die() {
+            playState = 'idle';
+            tsunami.visible = false;
+            luckyBlock.visible = false;
+            if (followerPet) {
+                scene.remove(followerPet);
+                followerPet = null;
+            }
+            // Reset player position to base
+            controls.getObject().position.set(0, 5, 20);
+            velocity.set(0,0,0);
+            showMessage("波に飲まれた... キャラロスト", 3000, "text-blue-200");
+        }
+
+        function winEscape() {
+            playState = 'idle';
+            tsunami.visible = false;
+            if (followerPet) {
+                scene.remove(followerPet);
+                followerPet = null;
+                
+                if (gameState.petsCount < 10) {
+                    gameState.petsCount++;
+                    saveData();
+                    updateUI();
+                    rebuildBasePets();
+                    showMessage("生還！ キャラを基地に配置した！", 3000, "text-green-400");
+                } else {
+                    // Full base gives bonus money
+                    gameState.money += gameState.kickPower * 10;
+                    saveData();
+                    updateUI();
+                    showMessage("生還！ 基地が満員なのでボーナス金ゲット！", 3000, "text-yellow-400");
+                }
+            }
+        }
+
+        // === Base Mechanics ===
+
+        function rebuildBasePets() {
+            // Clear existing
+            while(basePetsGroup.children.length > 0){ 
+                basePetsGroup.remove(basePetsGroup.children[0]); 
+            }
+            
+            // Generate random positions in base
+            for (let i = 0; i < gameState.petsCount; i++) {
+                const mat = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
+                const mesh = new THREE.Mesh(new THREE.BoxGeometry(2,2,2), mat);
+                mesh.position.set(
+                    (Math.random() - 0.5) * 80,
+                    1,
+                    (Math.random() - 0.5) * 80
+                );
+                // Store random phase for bouncing
+                mesh.userData.phase = Math.random() * Math.PI * 2; 
+                basePetsGroup.add(mesh);
+            }
+        }
+
+        function generatePassiveIncome() {
+            if (!userId) return;
+            if (gameState.petsCount > 0) {
+                // Base 10 money per pet per second
+                bankMoney += gameState.petsCount * 10;
+                updateUI();
+            }
+        }
+
+        function checkPressurePlate() {
+            const pPos = controls.getObject().position;
+            // Plate is at 0, 0.25, 20, size 10x10
+            if (Math.abs(pPos.x - pressurePlate.position.x) < 5 && 
+                Math.abs(pPos.z - pressurePlate.position.z) < 5) {
+                
+                if (bankMoney > 0) {
+                    gameState.money += bankMoney;
+                    const collected = Math.floor(bankMoney);
+                    bankMoney = 0;
+                    saveData();
+                    updateUI();
+                    showMessage(`バンクから ${collected}金 受け取った！`, 2000, "text-yellow-300");
+                }
+            }
+        }
+
+        // === Main Loop ===
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (!userId || !controls) return;
+
+            const time = performance.now();
+            const delta = (time - prevTime) / 1000;
+
+            if (controls.isLocked) {
+                
+                // 1. Workout Logic
+                if (isLifting) {
+                    squatPhase += delta * 5;
+                    // Squat animation
+                    const s = (Math.sin(squatPhase) + 1) / 2; // 0 to 1
+                    camera.position.y = 5 - (s * 2); // dip down to 3
+                    playerBody.scale.y = 1 - (s * 0.4); // shrink vertically
+                    
+                    // Increase power
+                    gameState.kickPower += delta * 2; // +2 power per second
+                    updateUI();
+                } 
+                // 2. Normal Movement Logic
+                else {
+                    // Physics & Movement
+                    velocity.x -= velocity.x * 10.0 * delta;
+                    velocity.z -= velocity.z * 10.0 * delta;
+                    velocity.y -= 300.0 * delta; // Gravity
+
+                    direction.z = Number(moveForward) - Number(moveBackward);
+                    direction.x = Number(moveRight) - Number(moveLeft);
+                    direction.normalize();
+
+                    // Calculate actual move speed (Base + SpeedLevel bonus)
+                    const moveSpeed = 400.0 + (gameState.speedLevel * 50.0);
+
+                    if (moveForward || moveBackward) velocity.z -= direction.z * moveSpeed * delta;
+                    if (moveLeft || moveRight) velocity.x -= direction.x * moveSpeed * delta;
+
+                    controls.moveRight(-velocity.x * delta);
+                    controls.moveForward(-velocity.z * delta);
+                    controls.getObject().position.y += (velocity.y * delta); // new behavior
+
+                    if (controls.getObject().position.y < 5) {
+                        velocity.y = 0;
+                        controls.getObject().position.y = 5;
+                        canJump = true;
+                    }
+                    
+                    // Restrict X bounds
+                    if (controls.getObject().position.x > 30) controls.getObject().position.x = 30;
+                    if (controls.getObject().position.x < -30) controls.getObject().position.x = -30;
+                    
+                    // Restrict Z backward bounds
+                    if (controls.getObject().position.z > 45) controls.getObject().position.z = 45;
+                }
+
+                const playerPos = controls.getObject().position;
+
+                // 3. Game State Logic
+                checkPressurePlate();
+
+                if (playState === 'kicked') {
+                    // Check collision with block
+                    if (playerPos.distanceTo(luckyBlock.position) < 8) {
+                        triggerTsunami(luckyBlock.position.z);
+                    }
+                } 
+                else if (playState === 'escape') {
+                    // Tsunami moves forward. Speed adapts to distance to ensure tension
+                    const playerBaseSpeedUnits = (400.0 + (gameState.speedLevel * 50.0)) * delta;
+                    // Make tsunami slightly slower than player max speed, but unrelenting
+                    const tsunamiSpeed = playerBaseSpeedUnits * 0.95; 
+                    
+                    tsunami.position.z += tsunamiSpeed;
+
+                    // Follower Pet animation
+                    if (followerPet) {
+                        // Smooth follow behind camera
+                        const offset = new THREE.Vector3(2, 0, 4);
+                        offset.applyQuaternion(camera.quaternion);
+                        const targetPos = playerPos.clone().add(offset);
+                        followerPet.position.lerp(targetPos, 0.1);
+                        followerPet.position.y = 2 + Math.abs(Math.sin(time * 0.01)) * 2; // Bounce
+                    }
+
+                    // Check Death by Tsunami (Tsunami front Z is position.z + 10)
+                    if (tsunami.position.z + 10 > playerPos.z) {
+                        die();
+                    }
+                    
+                    // Check Win (Cross back into safe zone Z > -25)
+                    if (playerPos.z > -25) {
+                        winEscape();
+                    }
+                }
+
+                // 4. Base Pets Animation
+                basePetsGroup.children.forEach(pet => {
+                    pet.rotation.y += 0.02;
+                    pet.position.y = 1 + Math.abs(Math.sin((time * 0.005) + pet.userData.phase)) * 2;
+                });
+            }
+
+            prevTime = time;
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
