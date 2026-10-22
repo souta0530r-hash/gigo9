@@ -1,649 +1,637 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Lucky Block Tsunami Survival 3D</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Inter', sans-serif; user-select: none; }
-        canvas { display: block; width: 100vw; height: 100vh; }
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        .pointer-events-auto { pointer-events: auto; }
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; background-color: white; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid rgba(0,0,0,0.5); pointer-events: none; z-index: 50;}
-        .hud-text { text-shadow: 1px 1px 2px black; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lucky Block Tsunami Survival 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#14213d;--gold:#ffc93c;--panel:rgba(255,248,225,.92);--red:#e5484d;--blue:#2563eb;--green:#2f9e44}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#87ceeb;font-family:"M PLUS Rounded 1c",system-ui,sans-serif;color:var(--ink);user-select:none}
+canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block}
+#hud{position:fixed;inset:0;pointer-events:none;display:none}
+#panel{position:absolute;top:14px;left:14px;background:var(--panel);border:3px solid var(--ink);border-radius:14px;padding:10px 14px;min-width:260px;font-weight:800;font-size:14px;line-height:1.7;box-shadow:0 4px 0 var(--ink)}
+#panel .big{font-size:26px;line-height:1.3}
+#panel button{margin-top:8px;width:100%;pointer-events:auto}
+#help{position:absolute;top:14px;right:14px;background:var(--panel);border:3px solid var(--ink);border-radius:14px;padding:10px 14px;font-weight:800;font-size:13px;line-height:1.7;text-align:right;box-shadow:0 4px 0 var(--ink)}
+#help kbd{background:#fff;border:2px solid var(--ink);border-radius:6px;padding:0 6px;font-family:inherit}
+#escape{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:min(420px,40vw);display:none;text-align:center;font-weight:800;color:#fff;text-shadow:0 2px 0 var(--ink)}
+.track{height:18px;border:3px solid var(--ink);border-radius:10px;background:rgba(255,255,255,.5);overflow:hidden;margin-top:4px}
+.track i{display:block;height:100%;width:0;background:var(--green);transition:width .1s}
+#banner{position:absolute;left:50%;top:32%;transform:translate(-50%,-50%);font-size:clamp(24px,4vw,46px);font-weight:800;color:#fff;text-align:center;text-shadow:0 4px 0 var(--ink),0 0 12px rgba(0,0,0,.4);display:none;width:90vw}
+#bottom{position:absolute;left:0;right:0;bottom:26px;display:flex;flex-direction:column;align-items:center;gap:10px}
+#kickWrap{display:none;flex-direction:column;align-items:center;gap:4px;color:#fff;font-weight:800;text-shadow:0 2px 0 var(--ink)}
+#kickBtn{font-size:28px;padding:14px 34px;pointer-events:auto;animation:pulse 1.1s infinite}
+@keyframes pulse{50%{transform:scale(1.06)}}
+#workStatus{display:none;background:var(--gold);border:3px solid var(--ink);border-radius:30px;padding:8px 24px;font-weight:800;font-size:20px;box-shadow:0 4px 0 var(--ink)}
+#cross{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#fff;border:1px solid var(--ink);opacity:.7}
+button{font-family:inherit;font-weight:800;font-size:15px;color:var(--ink);background:var(--gold);border:3px solid var(--ink);border-radius:12px;padding:8px 16px;cursor:pointer;box-shadow:0 4px 0 var(--ink)}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+button:disabled{background:#ddd;color:#888;border-color:#888;box-shadow:0 4px 0 #888;cursor:not-allowed}
+button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+#menu{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(20,33,61,.55);z-index:10}
+.card{background:#fff;border:4px solid var(--ink);border-radius:20px;box-shadow:0 8px 0 var(--ink);padding:28px 30px;width:min(92vw,440px);text-align:center}
+.card h1{margin:0 0 4px;font-size:30px;line-height:1.15;color:var(--blue)}
+.card p{margin:6px 0 16px;font-size:14px;line-height:1.7;font-weight:500}
+#loginBtn{width:100%;background:#fff;font-size:17px;padding:12px;display:flex;align-items:center;justify-content:center;gap:10px}
+#playBtn{width:100%;font-size:20px;padding:14px;background:var(--blue);color:#fff}
+#menuMsg{min-height:20px;margin-top:10px;color:var(--red);font-weight:800;font-size:13px}
+#who{font-size:13px;font-weight:800;margin-bottom:10px}
+#signOut{margin-top:12px;font-size:12px;padding:4px 10px;background:#fff}
+</style>
 </head>
 <body>
+<canvas id="gameCanvas"></canvas>
 
-    <!-- 3D Canvas -->
-    <canvas id="gameCanvas"></canvas>
+<div id="hud">
+  <div id="panel">
+    <div class="big">💰 <span id="uiMoney">0</span></div>
+    <div>🏦 基地バンク：<span id="uiBank">0</span></div>
+    <div>💪 キックパワー：<span id="uiPower">10</span>（飛距離 <span id="uiDist">0</span>m）</div>
+    <div>🏃 スピードLv：<span id="uiSpeed">1</span></div>
+    <div>👾 キャラ：<span id="uiPets">0</span>/10 ／ 収入 <span id="uiInc">0</span>/秒</div>
+    <button id="speedBtn">スピード強化 [R]</button>
+  </div>
+  <div id="help">
+    <div><kbd>マウス</kbd> 視点操作 ／ <kbd>ホイール</kbd> ズーム</div>
+    <div><kbd>W A S D</kbd> 移動 ／ <kbd>Space</kbd> ジャンプ</div>
+    <div><kbd>Q</kbd> ダンベル筋トレ ON/OFF</div>
+    <div><kbd>E</kbd> / クリック キック（セーフゾーン内）</div>
+    <div><kbd>R</kbd> スピード強化（金）</div>
+  </div>
+  <div id="escape"><div id="escapeText"></div><div class="track"><i id="escapeFill"></i></div></div>
+  <div id="cross"></div>
+  <div id="banner"></div>
+  <div id="bottom">
+    <div id="kickWrap"><button id="kickBtn">🦵 キック！ [E]</button><div id="kickInfo"></div></div>
+    <div id="workStatus"></div>
+  </div>
+</div>
 
-    <!-- Crosshair -->
-    <div id="crosshair"></div>
-
-    <!-- UI Layer -->
-    <div id="ui-layer" class="flex flex-col justify-between p-4 z-10">
-        
-        <!-- Top HUD -->
-        <div class="flex justify-between items-start">
-            <div class="bg-gray-900/70 p-4 rounded-xl shadow-lg border-2 border-gray-600 text-white min-w-[200px]">
-                <h2 class="text-2xl font-bold text-yellow-400 hud-text">💰 ウォレット: <span id="coinCount">0</span></h2>
-                <div class="mt-2 space-y-1 font-semibold text-gray-200">
-                    <p>🏦 基地バンク: <span id="bankCount" class="text-green-400">0</span></p>
-                    <p>💪 キックパワー: <span id="powerLevel" class="text-red-400">10</span></p>
-                    <p>🏃 スピードLv: <span id="speedLevel" class="text-blue-400">1</span></p>
-                    <p>👾 キャラ(Pets): <span id="petCount">0</span>/10</p>
-                </div>
-            </div>
-            
-            <!-- Controls Guide -->
-            <div class="bg-gray-900/70 p-4 rounded-xl shadow-lg border-2 border-gray-600 text-white text-right">
-                <h3 class="font-bold text-lg mb-2 border-b border-gray-500 pb-1">操作方法 (キーボード)</h3>
-                <p>移動: <span class="text-yellow-300 font-mono">W A S D</span></p>
-                <p>ジャンプ: <span class="text-yellow-300 font-mono">SPACE</span></p>
-                <p>筋トレ (On/Off): <span class="text-yellow-300 font-mono">Q</span></p>
-                <p>キックする: <span class="text-yellow-300 font-mono">E</span></p>
-                <p>スピード強化: <span class="text-yellow-300 font-mono">R</span> <span id="speedCostText" class="text-xs text-gray-400">(50金)</span></p>
-            </div>
-        </div>
-
-        <!-- Center Notifications -->
-        <div class="flex-1 flex items-center justify-center">
-            
-            <!-- Start Screen / Blocker -->
-            <div id="blocker" class="absolute inset-0 bg-black/60 flex items-center justify-center pointer-events-auto backdrop-blur-sm z-50">
-                <div id="loginModal" class="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-md w-full mx-4 border-4 border-blue-500">
-                    <h1 class="text-4xl font-extrabold text-blue-600 mb-2">TSUNAMI SURVIVAL</h1>
-                    <p class="text-gray-600 mb-6 font-bold">基地を育てて、津波から逃げ切れ！</p>
-                    
-                    <button id="googleLoginBtn" class="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-bold py-4 px-4 rounded-lg flex items-center justify-center gap-2 shadow-sm transition-all mb-4 text-lg">
-                        <svg class="w-6 h-6" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                        Googleでログインして遊ぶ
-                    </button>
-                    
-                    <div id="playInstructions" class="hidden">
-                        <button id="playBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-4 rounded-lg text-2xl shadow-lg transition-transform hover:scale-105 active:scale-95">
-                            ゲーム画面をクリックして開始
-                        </button>
-                        <p class="mt-4 text-sm text-gray-500">※カーソルを解除するにはESCキーを押してください</p>
-                    </div>
-                </div>
-            </div>
-
-            <div id="messageBanner" class="hidden text-5xl font-black text-white drop-shadow-[0_4px_4px_rgba(0,0,0,1)] animate-bounce text-center tracking-wider">
-                MESSAGE
-            </div>
-        </div>
-
-        <!-- Bottom Action Status -->
-        <div class="flex justify-center pb-8">
-            <div id="actionStatus" class="hidden bg-yellow-400 text-yellow-900 px-8 py-3 rounded-full font-black text-2xl shadow-[0_4px_0_#b45309] animate-pulse">
-                💪 筋トレ中... (移動不可)
-            </div>
-        </div>
+<div id="menu">
+  <div class="card">
+    <h1>LUCKY BLOCK<br>TSUNAMI SURVIVAL</h1>
+    <p>ダンベルでパワーを鍛えてブロックを蹴り、<br>迫る津波から逃げ切ってキャラを持ち帰ろう。</p>
+    <div id="who"></div>
+    <button id="loginBtn">
+      <svg width="22" height="22" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Googleでログインして遊ぶ
+    </button>
+    <div id="playBox" style="display:none">
+      <button id="playBtn">クリックして開始</button>
+      <p style="margin:10px 0 0;font-size:12px">Escキーでカーソルを解除（一時停止）できます</p>
+      <button id="signOut">ログアウト</button>
     </div>
-
-    <!-- Firebase -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-        
-        // Three.js
-        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
-        import { PointerLockControls } from 'https://unpkg.com/three@0.128.0/examples/jsm/controls/PointerLockControls.js';
-
-        // === Firebase Config ===
-        const firebaseConfig = {
-            apiKey: "AIzaSyCpKaYMQNb0pEUcoBQIQvA5rofbpH3NkvY",
-            authDomain: "gigo-f334a.firebaseapp.com",
-            projectId: "gigo-f334a",
-            storageBucket: "gigo-f334a.firebasestorage.app",
-            messagingSenderId: "899759444818",
-            appId: "1:899759444818:web:9583a5db72c59f0e72608b"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // Required paths rules fallback
-        const appEnvId = typeof __app_id !== 'undefined' ? __app_id : 'gigo-f334a';
-        let userId = null;
-
-        // === Game State ===
-        let gameState = {
-            money: 0,
-            kickPower: 10,
-            speedLevel: 1,
-            petsCount: 0
-        };
-        let bankMoney = 0;
-        let isLifting = false;
-        let playState = 'idle'; // 'idle', 'kicked', 'escape'
-        let speedCost = 50;
-        let squatPhase = 0;
-
-        // === DOM Elements ===
-        const ui = {
-            money: document.getElementById('coinCount'),
-            bank: document.getElementById('bankCount'),
-            power: document.getElementById('powerLevel'),
-            speed: document.getElementById('speedLevel'),
-            pets: document.getElementById('petCount'),
-            cost: document.getElementById('speedCostText'),
-            blocker: document.getElementById('blocker'),
-            loginBtn: document.getElementById('googleLoginBtn'),
-            playBtn: document.getElementById('playBtn'),
-            instructions: document.getElementById('playInstructions'),
-            message: document.getElementById('messageBanner'),
-            status: document.getElementById('actionStatus')
-        };
-
-        // === Auth & DB Logic ===
-        ui.loginBtn.addEventListener('click', () => {
-            const provider = new GoogleAuthProvider();
-            signInWithPopup(auth, provider).catch(console.error);
-        });
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                userId = user.uid;
-                ui.loginBtn.style.display = 'none';
-                ui.instructions.classList.remove('hidden');
-                loadData();
-                initThreeJS();
-            }
-        });
-
-        // Try environment token if present
-        if (typeof __initial_auth_token !== 'undefined') {
-            signInWithCustomToken(auth, __initial_auth_token).catch(console.error);
-        }
-
-        const getUserDocRef = () => doc(db, 'artifacts', appEnvId, 'users', userId, 'gamedata', 'save');
-
-        async function loadData() {
-            if (!userId) return;
-            const docRef = getUserDocRef();
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                gameState = { ...gameState, ...docSnap.data() };
-            } else {
-                await setDoc(docRef, gameState);
-            }
-            updateSpeedCost();
-            updateUI();
-            rebuildBasePets();
-        }
-
-        async function saveData() {
-            if (!userId) return;
-            await setDoc(getUserDocRef(), gameState, { merge: true });
-        }
-
-        function updateSpeedCost() {
-            speedCost = Math.floor(50 * Math.pow(1.5, gameState.speedLevel - 1));
-        }
-
-        function updateUI() {
-            ui.money.innerText = Math.floor(gameState.money);
-            ui.bank.innerText = Math.floor(bankMoney);
-            ui.power.innerText = Math.floor(gameState.kickPower);
-            ui.speed.innerText = gameState.speedLevel;
-            ui.pets.innerText = gameState.petsCount;
-            ui.cost.innerText = `(${speedCost}金)`;
-        }
-
-        function showMessage(text, duration, colorClass = "text-white") {
-            ui.message.innerText = text;
-            ui.message.className = `text-5xl font-black drop-shadow-[0_4px_4px_rgba(0,0,0,1)] animate-bounce text-center tracking-wider ${colorClass}`;
-            ui.message.classList.remove('hidden');
-            setTimeout(() => ui.message.classList.add('hidden'), duration);
-        }
-
-        // === Three.js Setup ===
-        let scene, camera, renderer, controls;
-        let objects = [];
-        let raycaster;
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, canJump = false;
-        let velocity = new THREE.Vector3();
-        let direction = new THREE.Vector3();
-        let prevTime = performance.now();
-
-        // Game Objects
-        let safeZonePlane, lanePlane, pressurePlate, luckyBlock, tsunami;
-        let basePetsGroup = new THREE.Group();
-        let followerPet = null;
-        let playerBody;
-
-        function initThreeJS() {
-            if (scene) return; // Prevent double init
-            
-            const canvas = document.getElementById('gameCanvas');
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87CEEB);
-            scene.fog = new THREE.FogExp2(0x87CEEB, 0.001); // Distant fog
-
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 5000);
-            camera.position.y = 5;
-
-            // Lighting
-            const light = new THREE.HemisphereLight(0xeeeeff, 0x777788, 0.75);
-            light.position.set(0.5, 1, 0.75);
-            scene.add(light);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            dirLight.position.set(100, 200, 50);
-            dirLight.castShadow = true;
-            dirLight.shadow.camera.top = 200;
-            dirLight.shadow.camera.bottom = -200;
-            dirLight.shadow.camera.left = -200;
-            dirLight.shadow.camera.right = 200;
-            scene.add(dirLight);
-
-            // Controls
-            controls = new PointerLockControls(camera, document.body);
-            ui.playBtn.addEventListener('click', () => controls.lock());
-            controls.addEventListener('lock', () => ui.blocker.style.display = 'none');
-            controls.addEventListener('unlock', () => ui.blocker.style.display = 'flex');
-            scene.add(controls.getObject());
-
-            // Player Visual Body (attached to camera so it moves with it, but we offset it down)
-            const bodyGeo = new THREE.BoxGeometry(3, 6, 3);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xef4444 });
-            playerBody = new THREE.Mesh(bodyGeo, bodyMat);
-            playerBody.position.y = -3;
-            playerBody.castShadow = true;
-            camera.add(playerBody); // Attach to camera to move together
-
-            // Environment: Safe Zone (Base)
-            const szGeo = new THREE.PlaneGeometry(100, 100);
-            const szMat = new THREE.MeshStandardMaterial({ color: 0x86efac, roughness: 0.8 });
-            safeZonePlane = new THREE.Mesh(szGeo, szMat);
-            safeZonePlane.rotation.x = -Math.PI / 2;
-            safeZonePlane.position.set(0, 0, 0);
-            safeZonePlane.receiveShadow = true;
-            scene.add(safeZonePlane);
-
-            // Environment: Lane
-            const laneGeo = new THREE.PlaneGeometry(60, 4000);
-            const laneMat = new THREE.MeshStandardMaterial({ color: 0x6b7280, roughness: 0.6 });
-            lanePlane = new THREE.Mesh(laneGeo, laneMat);
-            lanePlane.rotation.x = -Math.PI / 2;
-            lanePlane.position.set(0, -0.1, -1950);
-            lanePlane.receiveShadow = true;
-            scene.add(lanePlane);
-
-            // Pressure Plate
-            const plateGeo = new THREE.BoxGeometry(10, 0.5, 10);
-            const plateMat = new THREE.MeshStandardMaterial({ color: 0xfacc15 });
-            pressurePlate = new THREE.Mesh(plateGeo, plateMat);
-            pressurePlate.position.set(0, 0.25, 20);
-            pressurePlate.receiveShadow = true;
-            scene.add(pressurePlate);
-
-            // Lucky Block (Hidden initially)
-            const blockGeo = new THREE.BoxGeometry(4, 4, 4);
-            const blockMat = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.3, metalness: 0.8 });
-            luckyBlock = new THREE.Mesh(blockGeo, blockMat);
-            luckyBlock.position.set(0, 2, 0);
-            luckyBlock.castShadow = true;
-            luckyBlock.visible = false;
-            scene.add(luckyBlock);
-
-            // Tsunami (Hidden initially)
-            const tsunamiGeo = new THREE.BoxGeometry(300, 100, 20);
-            const tsunamiMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.7 });
-            tsunami = new THREE.Mesh(tsunamiGeo, tsunamiMat);
-            tsunami.position.set(0, 50, 0);
-            tsunami.visible = false;
-            scene.add(tsunami);
-
-            // Pets Group in Base
-            scene.add(basePetsGroup);
-
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-
-            setupInput();
-            window.addEventListener('resize', onWindowResize);
-
-            // Start Game Loops
-            setInterval(generatePassiveIncome, 1000);
-            animate();
-        }
-
-        function setupInput() {
-            const onKeyDown = (event) => {
-                if(!controls.isLocked) return;
-                switch (event.code) {
-                    case 'ArrowUp':
-                    case 'KeyW': moveForward = true; break;
-                    case 'ArrowLeft':
-                    case 'KeyA': moveLeft = true; break;
-                    case 'ArrowDown':
-                    case 'KeyS': moveBackward = true; break;
-                    case 'ArrowRight':
-                    case 'KeyD': moveRight = true; break;
-                    case 'Space': if (canJump && !isLifting) velocity.y += 100; canJump = false; break;
-                    case 'KeyQ': toggleWorkout(); break;
-                    case 'KeyE': triggerKick(); break;
-                    case 'KeyR': upgradeSpeed(); break;
-                }
-            };
-
-            const onKeyUp = (event) => {
-                switch (event.code) {
-                    case 'ArrowUp':
-                    case 'KeyW': moveForward = false; break;
-                    case 'ArrowLeft':
-                    case 'KeyA': moveLeft = false; break;
-                    case 'ArrowDown':
-                    case 'KeyS': moveBackward = false; break;
-                    case 'ArrowRight':
-                    case 'KeyD': moveRight = false; break;
-                }
-            };
-
-            document.addEventListener('keydown', onKeyDown);
-            document.addEventListener('keyup', onKeyUp);
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        // === Game Actions ===
-
-        function toggleWorkout() {
-            if (playState !== 'idle') {
-                showMessage("今は筋トレできない！", 2000, "text-red-500");
-                return;
-            }
-            
-            // 基地内(Z > -50)でのみ筋トレ可能
-            if (controls.getObject().position.z < -50) {
-                showMessage("基地に戻ってから筋トレしよう", 2000, "text-yellow-400");
-                return;
-            }
-
-            isLifting = !isLifting;
-            if (isLifting) {
-                ui.status.classList.remove('hidden');
-                // Stop movement
-                moveForward = moveBackward = moveLeft = moveRight = false;
-                velocity.x = velocity.z = 0;
-            } else {
-                ui.status.classList.add('hidden');
-                playerBody.scale.y = 1; // Reset scale
-                camera.position.y = 5;
-            }
-        }
-
-        function upgradeSpeed() {
-            if (gameState.money >= speedCost) {
-                gameState.money -= speedCost;
-                gameState.speedLevel++;
-                updateSpeedCost();
-                saveData();
-                updateUI();
-                showMessage("スピードUP!!", 1500, "text-blue-400");
-            } else {
-                showMessage("お金が足りない！", 1500, "text-red-500");
-            }
-        }
-
-        function triggerKick() {
-            if (playState !== 'idle' || isLifting) return;
-            
-            if (controls.getObject().position.z < -40) {
-                showMessage("基地(緑のエリア)から蹴ってね", 2000, "text-yellow-400");
-                return;
-            }
-
-            playState = 'kicked';
-            
-            // Calculate distance based on kick power (e.g. power 10 -> z=-200, power 100 -> z=-2000)
-            const targetZ = -50 - (gameState.kickPower * 15); 
-            
-            luckyBlock.position.set(0, 50, 0); // Drop from sky
-            luckyBlock.visible = true;
-            
-            // Simple animation of block flying
-            let flightProgress = 0;
-            const flightInterval = setInterval(() => {
-                flightProgress += 0.05;
-                luckyBlock.position.z = THREE.MathUtils.lerp(0, targetZ, flightProgress);
-                luckyBlock.position.y = Math.max(2, 50 - (flightProgress * 100)); // Arc down
-                luckyBlock.rotation.x += 0.2;
-                luckyBlock.rotation.y += 0.2;
-                
-                if (flightProgress >= 1) {
-                    clearInterval(flightInterval);
-                    luckyBlock.position.y = 2;
-                    luckyBlock.position.z = targetZ;
-                    showMessage("走れ！ブロックを取りに行け！", 3000, "text-yellow-400");
-                }
-            }, 16);
-        }
-
-        function triggerTsunami(blockZ) {
-            playState = 'escape';
-            luckyBlock.visible = false;
-            
-            // Spawn follower pet
-            const petGeo = new THREE.BoxGeometry(2, 2, 2);
-            const petMat = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
-            followerPet = new THREE.Mesh(petGeo, petMat);
-            scene.add(followerPet);
-
-            // Tsunami appears behind block
-            tsunami.position.set(0, 50, blockZ - 100);
-            tsunami.visible = true;
-            
-            showMessage("津波だ！急いで基地へ戻れ！！", 4000, "text-red-600");
-        }
-
-        function die() {
-            playState = 'idle';
-            tsunami.visible = false;
-            luckyBlock.visible = false;
-            if (followerPet) {
-                scene.remove(followerPet);
-                followerPet = null;
-            }
-            // Reset player position to base
-            controls.getObject().position.set(0, 5, 20);
-            velocity.set(0,0,0);
-            showMessage("波に飲まれた... キャラロスト", 3000, "text-blue-200");
-        }
-
-        function winEscape() {
-            playState = 'idle';
-            tsunami.visible = false;
-            if (followerPet) {
-                scene.remove(followerPet);
-                followerPet = null;
-                
-                if (gameState.petsCount < 10) {
-                    gameState.petsCount++;
-                    saveData();
-                    updateUI();
-                    rebuildBasePets();
-                    showMessage("生還！ キャラを基地に配置した！", 3000, "text-green-400");
-                } else {
-                    // Full base gives bonus money
-                    gameState.money += gameState.kickPower * 10;
-                    saveData();
-                    updateUI();
-                    showMessage("生還！ 基地が満員なのでボーナス金ゲット！", 3000, "text-yellow-400");
-                }
-            }
-        }
-
-        // === Base Mechanics ===
-
-        function rebuildBasePets() {
-            // Clear existing
-            while(basePetsGroup.children.length > 0){ 
-                basePetsGroup.remove(basePetsGroup.children[0]); 
-            }
-            
-            // Generate random positions in base
-            for (let i = 0; i < gameState.petsCount; i++) {
-                const mat = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
-                const mesh = new THREE.Mesh(new THREE.BoxGeometry(2,2,2), mat);
-                mesh.position.set(
-                    (Math.random() - 0.5) * 80,
-                    1,
-                    (Math.random() - 0.5) * 80
-                );
-                // Store random phase for bouncing
-                mesh.userData.phase = Math.random() * Math.PI * 2; 
-                basePetsGroup.add(mesh);
-            }
-        }
-
-        function generatePassiveIncome() {
-            if (!userId) return;
-            if (gameState.petsCount > 0) {
-                // Base 10 money per pet per second
-                bankMoney += gameState.petsCount * 10;
-                updateUI();
-            }
-        }
-
-        function checkPressurePlate() {
-            const pPos = controls.getObject().position;
-            // Plate is at 0, 0.25, 20, size 10x10
-            if (Math.abs(pPos.x - pressurePlate.position.x) < 5 && 
-                Math.abs(pPos.z - pressurePlate.position.z) < 5) {
-                
-                if (bankMoney > 0) {
-                    gameState.money += bankMoney;
-                    const collected = Math.floor(bankMoney);
-                    bankMoney = 0;
-                    saveData();
-                    updateUI();
-                    showMessage(`バンクから ${collected}金 受け取った！`, 2000, "text-yellow-300");
-                }
-            }
-        }
-
-        // === Main Loop ===
-
-        function animate() {
-            requestAnimationFrame(animate);
-            if (!userId || !controls) return;
-
-            const time = performance.now();
-            const delta = (time - prevTime) / 1000;
-
-            if (controls.isLocked) {
-                
-                // 1. Workout Logic
-                if (isLifting) {
-                    squatPhase += delta * 5;
-                    // Squat animation
-                    const s = (Math.sin(squatPhase) + 1) / 2; // 0 to 1
-                    camera.position.y = 5 - (s * 2); // dip down to 3
-                    playerBody.scale.y = 1 - (s * 0.4); // shrink vertically
-                    
-                    // Increase power
-                    gameState.kickPower += delta * 2; // +2 power per second
-                    updateUI();
-                } 
-                // 2. Normal Movement Logic
-                else {
-                    // Physics & Movement
-                    velocity.x -= velocity.x * 10.0 * delta;
-                    velocity.z -= velocity.z * 10.0 * delta;
-                    velocity.y -= 300.0 * delta; // Gravity
-
-                    direction.z = Number(moveForward) - Number(moveBackward);
-                    direction.x = Number(moveRight) - Number(moveLeft);
-                    direction.normalize();
-
-                    // Calculate actual move speed (Base + SpeedLevel bonus)
-                    const moveSpeed = 400.0 + (gameState.speedLevel * 50.0);
-
-                    if (moveForward || moveBackward) velocity.z -= direction.z * moveSpeed * delta;
-                    if (moveLeft || moveRight) velocity.x -= direction.x * moveSpeed * delta;
-
-                    controls.moveRight(-velocity.x * delta);
-                    controls.moveForward(-velocity.z * delta);
-                    controls.getObject().position.y += (velocity.y * delta); // new behavior
-
-                    if (controls.getObject().position.y < 5) {
-                        velocity.y = 0;
-                        controls.getObject().position.y = 5;
-                        canJump = true;
-                    }
-                    
-                    // Restrict X bounds
-                    if (controls.getObject().position.x > 30) controls.getObject().position.x = 30;
-                    if (controls.getObject().position.x < -30) controls.getObject().position.x = -30;
-                    
-                    // Restrict Z backward bounds
-                    if (controls.getObject().position.z > 45) controls.getObject().position.z = 45;
-                }
-
-                const playerPos = controls.getObject().position;
-
-                // 3. Game State Logic
-                checkPressurePlate();
-
-                if (playState === 'kicked') {
-                    // Check collision with block
-                    if (playerPos.distanceTo(luckyBlock.position) < 8) {
-                        triggerTsunami(luckyBlock.position.z);
-                    }
-                } 
-                else if (playState === 'escape') {
-                    // Tsunami moves forward. Speed adapts to distance to ensure tension
-                    const playerBaseSpeedUnits = (400.0 + (gameState.speedLevel * 50.0)) * delta;
-                    // Make tsunami slightly slower than player max speed, but unrelenting
-                    const tsunamiSpeed = playerBaseSpeedUnits * 0.95; 
-                    
-                    tsunami.position.z += tsunamiSpeed;
-
-                    // Follower Pet animation
-                    if (followerPet) {
-                        // Smooth follow behind camera
-                        const offset = new THREE.Vector3(2, 0, 4);
-                        offset.applyQuaternion(camera.quaternion);
-                        const targetPos = playerPos.clone().add(offset);
-                        followerPet.position.lerp(targetPos, 0.1);
-                        followerPet.position.y = 2 + Math.abs(Math.sin(time * 0.01)) * 2; // Bounce
-                    }
-
-                    // Check Death by Tsunami (Tsunami front Z is position.z + 10)
-                    if (tsunami.position.z + 10 > playerPos.z) {
-                        die();
-                    }
-                    
-                    // Check Win (Cross back into safe zone Z > -25)
-                    if (playerPos.z > -25) {
-                        winEscape();
-                    }
-                }
-
-                // 4. Base Pets Animation
-                basePetsGroup.children.forEach(pet => {
-                    pet.rotation.y += 0.02;
-                    pet.position.y = 1 + Math.abs(Math.sin((time * 0.005) + pet.userData.phase)) * 2;
-                });
-            }
-
-            prevTime = time;
-            renderer.render(scene, camera);
-        }
-    </script>
+    <div id="menuMsg"></div>
+  </div>
+</div>
+
+<!-- Three.js（グローバル版） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+/* ================= Firebase ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyCpKaYMQNb0pEUcoBQIQvA5rofbpH3NkvY",
+  authDomain: "gigo-f334a.firebaseapp.com",
+  projectId: "gigo-f334a",
+  storageBucket: "gigo-f334a.firebasestorage.app",
+  messagingSenderId: "899759444818",
+  appId: "1:899759444818:web:9583a5db72c59f0e72608b"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+/* ================= 定数・ゲーム式 ================= */
+const $ = id => document.getElementById(id);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const fmt = n => Math.floor(n).toLocaleString('ja-JP');
+
+const MAX_PETS = 10, MAX_SPEED_LV = 30;
+const LANE_START = -40;            // セーフゾーンとレーンの境目(z)
+const LANE_LEN = 4000;
+const HALF_W = 29;                 // 移動できる横幅
+const WAVE_GAP = 30;               // 出現時、波が背後にいる距離
+const PLATE = { x:0, z:20, hw:6, hd:4.5 };   // 感圧板（受け取り）
+const PED = [];                    // キャラ置き場 10か所
+for (let r = 0; r < 2; r++) for (let i = 0; i < 5; i++) PED.push({ x:-24 + i * 12, z:50 + r * 20 });
+
+const kickDistance = () => Math.min(3800, Math.round(60 + gs.kickPower * 8));  // キックパワー → 飛距離
+const playerSpeed  = () => 16 + 1.5 * (gs.speedLevel - 1);                      // スピードLv → 走る速さ
+const speedCost    = () => Math.floor(50 * Math.pow(1.5, gs.speedLevel - 1));  // Lvが上がるほど高くなる
+const TIERS = [
+  { min:0,   n:'ノーマル',   c:0x9ca3af, css:'#d1d5db' },
+  { min:8,   n:'レア',       c:0x3b82f6, css:'#93c5fd' },
+  { min:20,  n:'エピック',   c:0xa855f7, css:'#d8b4fe' },
+  { min:50,  n:'レジェンド', c:0xf59e0b, css:'#fcd34d' },
+  { min:120, n:'ミシック',   c:0xef4444, css:'#fca5a5' }
+];
+const tierOf = inc => [...TIERS].reverse().find(t => inc >= t.min);
+
+/* ================= セーブデータ ================= */
+const defaultState = () => ({ money:0, kickPower:10, speedLevel:1, pets:[], bank:0, bestDist:0, lastSeen:0 });
+let gs = defaultState();
+let uid = null, userName = '', saveEnabled = false, started = false, offlineMsg = '';
+
+const totalIncome = () => gs.pets.reduce((s, p) => s + p.inc, 0);
+const userRef = () => doc(db, 'users', uid);
+
+async function loadData(){
+  saveEnabled = false;
+  try {
+    const snap = await getDoc(userRef());
+    if (snap.exists()){
+      const d = snap.data(), b = defaultState();
+      gs = { ...b, ...d };
+      gs.money = Math.max(0, +gs.money || 0);
+      gs.bank = Math.max(0, +gs.bank || 0);
+      gs.kickPower = Math.max(10, +gs.kickPower || 10);
+      gs.speedLevel = clamp(Math.floor(+gs.speedLevel || 1), 1, MAX_SPEED_LV);
+      gs.pets = (Array.isArray(gs.pets) ? gs.pets : []).filter(p => p && p.inc > 0).slice(0, MAX_PETS)
+        .map(p => ({ inc:+p.inc, a:+p.a || 0xffffff }));
+      if (gs.lastSeen){   // 留守中の収入（最大2時間）
+        const sec = Math.min(7200, (Date.now() - gs.lastSeen) / 1000);
+        const gain = totalIncome() * sec;
+        if (gain >= 1){ gs.bank += gain; offlineMsg = `留守中に基地が ${fmt(gain)}金 稼いだ！`; }
+      }
+    } else {
+      gs = defaultState();
+      await setDoc(userRef(), { ...gs, lastSeen:Date.now() });
+    }
+    saveEnabled = true;
+  } catch (e){
+    $('menuMsg').textContent = 'セーブデータにアクセスできません（Firestoreを作成し、ルールを確認してください）: ' + (e.code || e.message);
+  }
+}
+let saving = false;
+async function saveData(){
+  if (!uid || !saveEnabled || saving) return;
+  saving = true;
+  try { gs.lastSeen = Date.now(); await setDoc(userRef(), JSON.parse(JSON.stringify(gs))); }
+  catch (e){ console.warn('save failed', e); }
+  saving = false;
+}
+setInterval(saveData, 20000);
+addEventListener('pagehide', saveData);
+document.addEventListener('visibilitychange', () => { if (document.hidden) saveData(); });
+
+/* 基地のキャラが生む金は、時間経過ぶんをまとめて加算（タブ非表示でも正確） */
+let lastTick = Date.now();
+setInterval(() => {
+  const now = Date.now(), dt = Math.min((now - lastTick) / 1000, 7200); lastTick = now;
+  if (uid && saveEnabled) gs.bank += totalIncome() * dt;
+}, 500);
+
+/* ================= Three.js 基本 ================= */
+const canvas = $('gameCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87ceeb);
+scene.fog = new THREE.FogExp2(0x87ceeb, 0.0009);
+const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.5, 5000);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x6b8f5a, 0.85));
+const sun = new THREE.DirectionalLight(0xffffff, 0.7); sun.position.set(80, 150, 60); scene.add(sun);
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+const lam = c => new THREE.MeshLambertMaterial({ color:c });
+function box(w, h, d, color, x, y, z, parent = scene){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), lam(color));
+  m.position.set(x, y, z); parent.add(m); return m;
+}
+function makeLabel(w, h, sx, sy){
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'), tex = new THREE.CanvasTexture(c);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map:tex, transparent:true }));
+  sp.scale.set(sx, sy, 1);
+  sp.userData.set = (lines, color = '#fff', bg = 'rgba(20,33,61,.78)') => {
+    g.clearRect(0, 0, w, h); g.fillStyle = bg; g.beginPath();
+    if (g.roundRect) g.roundRect(0, 0, w, h, h * .2); else g.rect(0, 0, w, h);
+    g.fill(); g.fillStyle = color; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const n = lines.length;
+    lines.forEach((t, i) => { g.font = `800 ${Math.floor(h / (n + .7))}px "M PLUS Rounded 1c", sans-serif`; g.fillText(t, w / 2, h * (i + .5) / n); });
+    tex.needsUpdate = true;
+  };
+  return sp;
+}
+
+/* ================= ワールド ================= */
+box(3000, 0.4, 9000, 0x5aa84a, 0, -0.6, -2000);                       // 地面
+box(60, 0.4, 90, 0x86efac, 0, -0.2, 45);                                // 基地
+box(60, 0.4, 40, 0x93c5fd, 0, -0.2, -20);                               // セーフゾーン
+box(60, 0.4, LANE_LEN, 0x6b7280, 0, -0.2, LANE_START - LANE_LEN / 2);   // 長いレーン
+box(60, 0.2, 1.2, 0xfacc15, 0, 0, LANE_START);                          // スタートライン
+for (const sx of [-1, 1]) box(2, 8, 4131, 0x9ca3af, sx * 31, 3.6, (91 + LANE_START - LANE_LEN) / 2);   // 左右の壁（z=91 〜 レーン終点）
+box(62, 3, 2, 0x9ca3af, 0, 1.5, 91);
+// レーンの距離マーカー
+for (let m = 250; m <= 3750; m += 250){
+  box(60, 0.3, 0.8, 0xffffff, 0, 0, LANE_START - m);
+  const s = makeLabel(256, 96, 12, 4.5); s.userData.set([m + 'm']); s.position.set(-27, 7, LANE_START - m); scene.add(s);
+}
+// セーフゾーンのゲート
+for (const sx of [-1, 1]) box(2.5, 15, 2.5, 0xef4444, sx * 29, 7.5, 0);
+box(61, 2.5, 2.5, 0xef4444, 0, 14.5, 0);
+{ const s = makeLabel(512, 128, 26, 6.5); s.userData.set(['SAFE ZONE'], '#bfdbfe', 'rgba(20,33,61,.85)'); s.position.set(0, 18.5, 0); scene.add(s); }
+{ const r = new THREE.Mesh(new THREE.RingGeometry(3, 3.9, 40), new THREE.MeshBasicMaterial({ color:0xfacc15, side:THREE.DoubleSide }));
+  r.rotation.x = -Math.PI / 2; r.position.set(0, 0.12, -20); scene.add(r); }
+
+// 感圧板（金の受け取り）
+const plate = box(12, 0.3, 9, 0xfacc15, PLATE.x, 0.1, PLATE.z);
+{ const t = makeLabel(512, 160, 10, 3.1); t.userData.set(['💰 受け取り'], '#14213d', 'rgba(255,255,255,0)'); 
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(10, 3.1), new THREE.MeshBasicMaterial({ map:t.material.map, transparent:true }));
+  p.rotation.x = -Math.PI / 2; p.position.set(PLATE.x, 0.3, PLATE.z); scene.add(p); }
+const bankLabel = makeLabel(512, 200, 14, 5.5); bankLabel.position.set(PLATE.x, 8, PLATE.z); scene.add(bankLabel);
+
+// ダンベルラック（見た目）
+{ box(8, 1.4, 3, 0x7c4a2d, -22, 0.7, 14);
+  for (let i = -1; i <= 1; i++) addDumbbell(new THREE.Vector3(-22 + i * 2.4, 1.9, 14), 0.5);
+  const s = makeLabel(384, 110, 9, 2.6); s.userData.set(['Q：筋トレ']); s.position.set(-22, 5.5, 14); scene.add(s); }
+
+function makeDumbbell(scale = 1){
+  const g = new THREE.Group(), steel = lam(0x2b2f3a);
+  const bar = new THREE.Mesh(new THREE.CylinderGeometry(.18, .18, 3.4, 10), steel); bar.rotation.z = Math.PI / 2; g.add(bar);
+  for (const sx of [-1, 1]){ const p = new THREE.Mesh(new THREE.CylinderGeometry(.85, .85, .55, 16), lam(0x4b5563)); p.rotation.z = Math.PI / 2; p.position.x = sx * 1.4; g.add(p); }
+  g.scale.setScalar(scale); return g;
+}
+function addDumbbell(pos, s){ const d = makeDumbbell(s); d.position.copy(pos); scene.add(d); }
+
+// キャラ置き場
+const pedestals = PED.map(p => {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(4.6, 4.8, 0.6, 28), lam(0x6b7280));
+  m.position.set(p.x, 0.3, p.z); scene.add(m); return m;
+});
+const petsGroup = new THREE.Group(); scene.add(petsGroup);
+let petMeshes = [];
+
+function makePetMesh(p){
+  const t = tierOf(p.inc), g = new THREE.Group();
+  box(2.6, 2.6, 2.6, t.c, 0, 1.3, 0, g);
+  box(1.7, 1.2, .2, p.a, 0, .9, 1.35, g);
+  for (const sx of [-1, 1]){
+    box(.6, .7, .2, 0xffffff, sx * .7, 1.9, 1.35, g);
+    box(.28, .32, .2, 0x111111, sx * .7, 1.9, 1.45, g);
+    box(.7, .9, .7, p.a, sx * .9, 3, 0, g);
+  }
+  g.scale.setScalar(1 + Math.min(.8, p.inc / 200));
+  return g;
+}
+function rebuildPets(){
+  while (petsGroup.children.length){
+    const c = petsGroup.children.pop();
+    c.traverse(o => { if (o.material && o.material.map) o.material.map.dispose(); });
+  }
+  petMeshes = [];
+  pedestals.forEach((ped, i) => ped.material.color.setHex(gs.pets[i] ? tierOf(gs.pets[i].inc).c : 0x6b7280));
+  gs.pets.forEach((p, i) => {
+    const g = makePetMesh(p); g.position.set(PED[i].x, 0.6, PED[i].z); g.rotation.y = Math.PI;
+    g.userData.phase = rnd(0, 6.28); petsGroup.add(g); petMeshes.push(g);
+    const t = tierOf(p.inc), s = makeLabel(384, 150, 9, 3.5);
+    s.userData.set([t.n, `+${p.inc}/秒`], t.css); s.position.set(PED[i].x, 9, PED[i].z); petsGroup.add(s);
+  });
+}
+
+/* ラッキーブロック */
+function blockTexture(){
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  g.fillStyle = '#f7c61b'; g.fillRect(0, 0, 128, 128);
+  g.strokeStyle = '#b8860b'; g.lineWidth = 10; g.strokeRect(5, 5, 118, 118);
+  g.fillStyle = '#fff'; g.strokeStyle = '#7a5600'; g.lineWidth = 6;
+  g.font = 'bold 92px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.strokeText('?', 64, 70); g.fillText('?', 64, 70);
+  return new THREE.CanvasTexture(c);
+}
+const blockGeo = new THREE.BoxGeometry(1, 1, 1);
+const blockMat = new THREE.MeshLambertMaterial({ map:blockTexture(), emissive:0x442b00 });
+const flyBlock = new THREE.Mesh(blockGeo, blockMat); flyBlock.scale.setScalar(4); flyBlock.visible = false; scene.add(flyBlock);
+
+/* 津波 */
+const wave = { group:new THREE.Group(), front:0, speed:0, t:0 };
+{ const body = box(64, 36, 24, 0x2563eb, 0, 18, 0, wave.group); body.material.transparent = true; body.material.opacity = .82;
+  box(64, 5, 26, 0xffffff, 0, 37, 0, wave.group); box(64, 20, 1, 0x60a5fa, 0, 10, 12.4, wave.group);
+  wave.body = body; wave.group.visible = false; scene.add(wave.group); }
+const placeWave = () => wave.group.position.set(0, 0, wave.front - 12);
+
+/* プレイヤー（ブロック人間） */
+function makeCharacter(){
+  const root = new THREE.Group(), hips = new THREE.Group(); hips.position.y = 3; root.add(hips);
+  box(2.2, 2.6, 1.2, 0xef4444, 0, 1.3, 0, hips);
+  box(1.6, 1.6, 1.6, 0xffd8a8, 0, 3.4, 0, hips);
+  box(1.7, .5, 1.7, 0x14213d, 0, 4.3, 0, hips);
+  for (const sx of [-1, 1]) box(.28, .32, .2, 0x111111, sx * .4, 3.5, .82, hips);
+  const mkLimb = (x, y, w, h, color) => {
+    const piv = new THREE.Group(); piv.position.set(x, y, 0);
+    box(w, h, w, color, 0, -h / 2, 0, piv); hips.add(piv); return piv;
+  };
+  const armL = mkLimb(-1.5, 2.4, .8, 2.3, 0xffd8a8), armR = mkLimb(1.5, 2.4, .8, 2.3, 0xffd8a8);
+  const legL = mkLimb(-.6, 0, 1, 3, 0x1d4ed8),       legR = mkLimb(.6, 0, 1, 3, 0x1d4ed8);
+  const dumb = makeDumbbell(1); dumb.position.set(0, 1.9, 2.1); dumb.visible = false; hips.add(dumb);
+  const held = new THREE.Mesh(blockGeo, blockMat); held.scale.setScalar(2.6); held.position.y = 8.8; held.visible = false; root.add(held);
+  root.userData = { hips, armL, armR, legL, legR, dumb, held };
+  return root;
+}
+const player = makeCharacter(); player.position.set(0, 0, 30); scene.add(player);
+const shadow = new THREE.Mesh(new THREE.CircleGeometry(1.8, 20), new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:.28 }));
+shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
+const pst = { vel:new THREE.Vector3(), vy:0, onGround:true, walk:0, rep:0, face:0 };
+
+/* パーティクル */
+const parts = [], pMats = {}, pGeo = new THREE.BoxGeometry(.5, .5, .5);
+function burst(pos, color, n = 20, spd = 8){
+  pMats[color] = pMats[color] || new THREE.MeshBasicMaterial({ color });
+  for (let i = 0; i < n; i++){
+    const m = new THREE.Mesh(pGeo, pMats[color]); m.position.copy(pos); scene.add(m);
+    parts.push({ m, v:new THREE.Vector3(rnd(-1, 1) * spd, rnd(.3, 1.4) * spd, rnd(-1, 1) * spd), life:rnd(.7, 1.3) });
+  }
+}
+
+/* ================= 状態・入力 ================= */
+let state = 'idle';            // idle | flying | escape
+let lifting = false, running = false, locked = false, dragMode = false;
+const keys = {};
+const cam = { yaw:0, pitch:.45, dist:17, mul:1 };
+const camTarget = new THREE.Vector3(0, 4.5, 30);
+let K = null;                  // 現在のキック情報
+
+const inSafe = () => player.position.z < 0 && player.position.z > LANE_START;
+
+function showMessage(text, ms = 2500, color = '#fff'){
+  const b = $('banner'); b.textContent = text; b.style.color = color; b.style.display = 'block';
+  clearTimeout(showMessage.t); showMessage.t = setTimeout(() => b.style.display = 'none', ms);
+}
+
+addEventListener('keydown', e => {
+  if (e.code === 'Escape' && dragMode && running){ running = false; showMenu(); return; }
+  if (!running) return;
+  keys[e.code] = true;
+  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+  if (e.repeat) return;
+  if (e.code === 'KeyQ') toggleWorkout();
+  if (e.code === 'KeyE') startKick();
+  if (e.code === 'KeyR') upgradeSpeed();
+});
+addEventListener('keyup', e => keys[e.code] = false);
+addEventListener('mousemove', e => {
+  if (!running) return;
+  if (!(locked || (dragMode && (e.buttons & 1)))) return;
+  cam.yaw -= e.movementX * 0.0025;
+  cam.pitch = clamp(cam.pitch + e.movementY * 0.0025, -0.1, 1.35);
+});
+addEventListener('mousedown', e => { if (running && locked && e.button === 0) startKick(); });
+addEventListener('wheel', e => { if (running) cam.dist = clamp(cam.dist + Math.sign(e.deltaY) * 2, 7, 40); }, { passive:true });
+
+document.addEventListener('pointerlockchange', () => {
+  locked = document.pointerLockElement === canvas;
+  if (locked){ running = true; started = true; hideMenu(); }
+  else if (!dragMode){ running = false; for (const k in keys) keys[k] = false; showMenu(); }
+});
+document.addEventListener('pointerlockerror', () => { dragMode = true; running = true; started = true; hideMenu(); });
+
+/* ================= アクション ================= */
+function toggleWorkout(){
+  if (state !== 'idle'){ showMessage('今は筋トレできない！', 1500, '#fca5a5'); return; }
+  lifting = !lifting; pst.vel.set(0, 0, 0);
+  if (lifting) showMessage('ダンベルでスクワット！パワーUP！', 1500, '#fde68a'); else saveData();
+}
+function upgradeSpeed(){
+  if (gs.speedLevel >= MAX_SPEED_LV){ showMessage('スピードは最大！', 1500, '#93c5fd'); return; }
+  const c = speedCost();
+  if (gs.money < c){ showMessage(`金が足りない！（${fmt(c)}金）`, 1500, '#fca5a5'); return; }
+  gs.money -= c; gs.speedLevel++; saveData();
+  showMessage(`スピードUP！ Lv${gs.speedLevel}`, 1500, '#93c5fd');
+}
+function startKick(){
+  if (state !== 'idle' || lifting || !inSafe()) return;
+  const D = kickDistance();
+  K = { D, landX:rnd(-12, 12), landZ:LANE_START - D, sx:player.position.x, sz:player.position.z,
+        t:0, dur:Math.min(7, 2.4 + D / 450), peak:25 + D * .12 };
+  gs.bestDist = Math.max(gs.bestDist, D);
+  state = 'flying'; player.visible = false; shadow.visible = false;
+  flyBlock.visible = true; flyBlock.position.set(K.sx, 10, K.sz);
+  cam.yaw = 0; cam.pitch = .4; cam.mul = 2;
+  showMessage(`キック！！ ${D}m 先へ！`, 2000, '#fde68a');
+}
+function landBlock(){
+  burst(new THREE.Vector3(K.landX, 3, K.landZ), 0xf7c61b, 45, 16);
+  flyBlock.visible = false;
+  player.position.set(K.landX, 0, K.landZ); player.visible = true; shadow.visible = true;
+  pst.vel.set(0, 0, 0); pst.vy = 0; pst.face = 0; player.rotation.y = 0;
+  wave.front = K.landZ - WAVE_GAP; wave.speed = 14 + K.D / 150; wave.t = 0; placeWave(); wave.group.visible = true;
+  state = 'escape'; cam.yaw = Math.PI; cam.pitch = .4; cam.mul = 1;
+  $('escape').style.display = 'block';
+  showMessage('キャラ出現！ 波が来る！ 走れ！！', 3000, '#ff8787');
+}
+function endEscape(){
+  state = 'idle'; wave.group.visible = false; $('escape').style.display = 'none'; cam.yaw = 0;
+}
+function die(){
+  burst(player.position.clone().setY(3), 0x60a5fa, 45, 16);
+  endEscape(); player.position.set(0, 0, -20); pst.vel.set(0, 0, 0); pst.vy = 0;
+  showMessage('波に飲まれた… キャラロスト', 3000, '#bfdbfe');
+}
+function winEscape(){
+  const inc = Math.max(2, Math.round(K.D * 0.04 * rnd(.8, 1.3)));
+  const pet = { inc, a:Math.floor(rnd(0, 0xffffff)) }, t = tierOf(inc);
+  endEscape();
+  if (gs.pets.length < MAX_PETS){
+    gs.pets.push(pet);
+    showMessage(`生還！ ${t.n}キャラを基地に配置！（+${inc}/秒）`, 3500, '#86efac');
+  } else {
+    let mi = 0; gs.pets.forEach((p, i) => { if (p.inc < gs.pets[mi].inc) mi = i; });
+    if (inc > gs.pets[mi].inc){ gs.pets[mi] = pet; showMessage(`生還！ 基地が満員なので弱いキャラと入れ替えた（+${inc}/秒）`, 3500, '#86efac'); }
+    else { const bonus = inc * 30; gs.money += bonus; showMessage(`生還！ 基地が満員なのでボーナス ${fmt(bonus)}金！`, 3500, '#fde68a'); }
+  }
+  rebuildPets(); saveData();
+}
+
+/* 感圧板 */
+let plateOn = false, plateCool = 0;
+function checkPlate(dt){
+  const p = player.position;
+  const on = state !== 'flying' && Math.abs(p.x - PLATE.x) < PLATE.hw && Math.abs(p.z - PLATE.z) < PLATE.hd && p.y < 2;
+  plate.position.y += ((on ? 0 : 0.1) - plate.position.y) * Math.min(1, dt * 15);
+  if (on){
+    plateCool -= dt;
+    if (!plateOn || plateCool <= 0){ collectBank(plateOn); plateCool = 1; }
+  }
+  plateOn = on;
+}
+function collectBank(silent){
+  const n = Math.floor(gs.bank);
+  if (n < 1) return;
+  gs.money += n; gs.bank -= n; saveData();
+  if (!silent) showMessage(`🏦 ${fmt(n)}金 受け取った！`, 2000, '#fde68a');
+}
+
+/* ================= 毎フレーム更新 ================= */
+const lerpAngle = (a, b, t) => a + ((((b - a + Math.PI) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) - Math.PI) * t;
+let labelTimer = 0;
+
+function movePlayer(dt){
+  const sp = playerSpeed();
+  let f = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
+  let r = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
+  if (lifting) f = r = 0;
+  const sy = Math.sin(cam.yaw), cy = Math.cos(cam.yaw);
+  let dx = -sy * f + cy * r, dz = -cy * f - sy * r;
+  const len = Math.hypot(dx, dz); if (len > 0){ dx /= len; dz /= len; }
+  const k = 1 - Math.exp(-14 * dt);
+  pst.vel.x += (dx * sp - pst.vel.x) * k; pst.vel.z += (dz * sp - pst.vel.z) * k;
+  const pos = player.position;
+  pos.x = clamp(pos.x + pst.vel.x * dt, -HALF_W, HALF_W);
+  pos.z = clamp(pos.z + pst.vel.z * dt, LANE_START - LANE_LEN + 20, 86);
+  if (keys.Space && pst.onGround && !lifting){ pst.vy = 20; pst.onGround = false; }
+  pst.vy -= 55 * dt; pos.y += pst.vy * dt;
+  if (pos.y <= 0){ pos.y = 0; pst.vy = 0; pst.onGround = true; }
+
+  let target = pst.face;
+  if (lifting) target = cam.yaw;                                   // 筋トレ中はカメラ側を向く（スクワットが見える）
+  else if (len > 0) target = Math.atan2(dx, dz);
+  else if (state === 'idle' && inSafe()) target = Math.PI;         // ブロックを持ってレーン方向を向く
+  pst.face = lerpAngle(pst.face, target, 1 - Math.exp(-12 * dt));
+  player.rotation.y = pst.face;
+}
+
+function animateChar(dt){
+  const u = player.userData, holdBlock = state === 'idle' && !lifting && inSafe();
+  u.held.visible = holdBlock; u.dumb.visible = lifting;
+  if (holdBlock) u.held.rotation.y += dt * 1.2;
+  if (lifting){
+    pst.rep += dt * 4.5;
+    const s = (1 - Math.cos(pst.rep)) / 2;                          // 0（立つ）→1（しゃがむ）
+    u.hips.position.y = 3 - 1.5 * s;
+    u.legL.scale.y = u.legR.scale.y = u.hips.position.y / 3;
+    u.legL.rotation.x = u.legR.rotation.x = 0;
+    u.armL.rotation.x = u.armR.rotation.x = -1.35;
+    u.dumb.position.y = 1.9 + .9 * (1 - s);
+    gs.kickPower += dt * 2;                                          // 屈伸するほどパワーが上がる
+  } else {
+    u.hips.position.y = 3; u.legL.scale.y = u.legR.scale.y = 1;
+    const spd = Math.hypot(pst.vel.x, pst.vel.z);
+    pst.walk += spd * dt * .5;
+    const sw = Math.sin(pst.walk) * Math.min(1, spd / 10) * .9;
+    u.legL.rotation.x = sw; u.legR.rotation.x = -sw;
+    if (holdBlock) u.armL.rotation.x = u.armR.rotation.x = -2.9;
+    else { u.armL.rotation.x = -sw; u.armR.rotation.x = sw; }
+  }
+  shadow.position.set(player.position.x, 0.06, player.position.z);
+}
+
+function update(dt){
+  if (state === 'flying'){
+    K.t = Math.min(1, K.t + dt / K.dur); const p = K.t;
+    flyBlock.position.set(K.sx + (K.landX - K.sx) * p, 2 + (1 - p) * 8 + 4 * K.peak * p * (1 - p), K.sz + (K.landZ - K.sz) * p);
+    flyBlock.rotation.x += dt * 8; flyBlock.rotation.z += dt * 5;
+    if (p >= 1) landBlock();
+  } else {
+    movePlayer(dt);
+    if (state === 'escape'){
+      wave.front += wave.speed * dt; wave.t += dt; placeWave();
+      wave.body.scale.y = 1 + .05 * Math.sin(wave.t * 5);
+      const pz = player.position.z;
+      if (wave.front >= pz - .5){ die(); }
+      else if (pz > LANE_START){ winEscape(); }
+      else {
+        const remain = LANE_START - pz, gap = pz - wave.front;
+        $('escapeText').textContent = `セーフゾーンまで ${Math.ceil(remain)}m ／ 波まで ${Math.ceil(gap)}m`;
+        $('escapeFill').style.width = clamp((1 - remain / K.D) * 100, 0, 100) + '%';
+        $('escapeFill').style.background = gap < 15 ? '#e5484d' : '#2f9e44';
+      }
+    }
+  }
+  checkPlate(dt);
+  animateChar(dt);
+  petMeshes.forEach(g => { g.position.y = .6 + Math.abs(Math.sin(performance.now() * .003 + g.userData.phase)) * .7; });
+  for (let i = parts.length - 1; i >= 0; i--){
+    const q = parts[i]; q.life -= dt; q.v.y -= 30 * dt; q.m.position.addScaledVector(q.v, dt);
+    if (q.m.position.y < .3){ q.m.position.y = .3; q.v.multiplyScalar(.4); }
+    if (q.life <= 0){ scene.remove(q.m); parts.splice(i, 1); }
+  }
+  labelTimer -= dt;
+  if (labelTimer <= 0){ labelTimer = .3; bankLabel.userData.set(['🏦 たまった金', fmt(gs.bank) + ' 金'], '#fde68a'); }
+}
+
+function updateCamera(dt){
+  const tgt = state === 'flying' ? flyBlock.position : player.position;
+  const k = 1 - Math.exp(-10 * dt);
+  camTarget.x += (tgt.x - camTarget.x) * k;
+  camTarget.y += ((tgt.y + (state === 'flying' ? 0 : 4.5)) - camTarget.y) * k;
+  camTarget.z += (tgt.z - camTarget.z) * k;
+  const d = cam.dist * cam.mul, cp = Math.cos(cam.pitch);
+  camera.position.set(camTarget.x + Math.sin(cam.yaw) * cp * d, Math.max(1.5, camTarget.y + Math.sin(cam.pitch) * d), camTarget.z + Math.cos(cam.yaw) * cp * d);
+  camera.lookAt(camTarget);
+}
+
+/* ================= HUD ================= */
+const setText = (id, v) => { const el = $(id); if (el._v !== v){ el._v = v; el.textContent = v; } };
+const setShow = (id, show, disp = 'block') => { const el = $(id); const v = show ? disp : 'none'; if (el.style.display !== v) el.style.display = v; };
+function updateUI(){
+  setText('uiMoney', fmt(gs.money)); setText('uiBank', fmt(gs.bank));
+  setText('uiPower', Math.floor(gs.kickPower)); setText('uiDist', kickDistance());
+  setText('uiSpeed', gs.speedLevel); setText('uiPets', gs.pets.length); setText('uiInc', fmt(totalIncome()));
+  const sb = $('speedBtn'), max = gs.speedLevel >= MAX_SPEED_LV;
+  setText('speedBtn', max ? 'スピード最大！' : `スピード強化 [R] — ${fmt(speedCost())}金`);
+  sb.disabled = max || gs.money < speedCost();
+  setShow('kickWrap', state === 'idle' && !lifting && inSafe(), 'flex');
+  setText('kickInfo', `飛距離 ${kickDistance()}m ／ 遠いほど強いキャラ（でも波は速い！）`);
+  setShow('workStatus', lifting);
+  if (lifting) setText('workStatus', `💪 筋トレ中… パワー ${Math.floor(gs.kickPower)}（Qでやめる）`);
+}
+
+/* ================= メニュー・ログイン ================= */
+function hideMenu(){ $('menu').style.display = 'none'; $('hud').style.display = 'block'; }
+function showMenu(){ $('menu').style.display = 'flex'; renderMenu(); }
+function renderMenu(){
+  $('loginBtn').style.display = uid ? 'none' : 'flex';
+  $('playBox').style.display = uid && saveEnabled ? 'block' : 'none';
+  $('playBtn').textContent = started ? 'クリックして再開' : 'クリックして開始';
+  $('who').textContent = uid ? `${userName} さんでログイン中` : '';
+}
+$('loginBtn').addEventListener('click', () => {
+  $('menuMsg').textContent = '';
+  signInWithPopup(auth, new GoogleAuthProvider()).catch(e => $('menuMsg').textContent = 'ログインに失敗しました: ' + e.code);
+});
+$('signOut').addEventListener('click', async () => { await saveData(); await signOut(auth); location.reload(); });
+$('playBtn').addEventListener('click', () => {
+  if (dragMode){ running = true; started = true; hideMenu(); return; }
+  try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e){}
+});
+$('kickBtn').addEventListener('click', startKick);
+$('speedBtn').addEventListener('click', upgradeSpeed);
+
+onAuthStateChanged(auth, async u => {
+  if (!u){ uid = null; saveEnabled = false; $('hud').style.display = 'none'; showMenu(); return; }
+  uid = u.uid; userName = u.displayName || 'プレイヤー';
+  $('menuMsg').textContent = '';
+  await loadData();
+  lastTick = Date.now();
+  rebuildPets(); renderMenu();
+  if (offlineMsg){ setTimeout(() => showMessage('🏠 ' + offlineMsg, 4000, '#fde68a'), 800); offlineMsg = ''; }
+});
+
+/* ================= ループ ================= */
+let lastT = performance.now();
+(function loop(now){
+  requestAnimationFrame(loop);
+  const dt = Math.min(.05, (now - lastT) / 1000); lastT = now;
+  if (running) update(dt);
+  updateCamera(dt);
+  updateUI();
+  renderer.render(scene, camera);
+})(performance.now());
+renderMenu();
+</script>
 </body>
 </html>
